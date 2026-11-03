@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f5a54">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="หารค่าแอป">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>หารค่าแอป</title>
+<style>
+@font-face{font-family:"TH Sarabun New";src:url(fonts/thsarabunnew-webfont.ttf) format("truetype");font-weight:400}
+@font-face{font-family:"TH Sarabun New";src:url(fonts/thsarabunnew_bold-webfont.ttf) format("truetype");font-weight:700}
+:root{--ink:#0f5a54;--ink2:#09403b;--text:#17302d;--mute:#5f7773;--line:#d3e5e0;--paper:#eef6f3;--card:#fff;--red:#cf3343;--green:#14855b}
+*{box-sizing:border-box}
+html,body{overflow-x:hidden;margin:0;color:var(--text);font-family:"TH Sarabun New",sans-serif;font-size:21px;line-height:1.3;-webkit-text-size-adjust:100%;background:var(--paper)}
+body{min-height:100vh;background-image:radial-gradient(#cfe3dd 1.2px,transparent 1.3px);background-size:22px 22px;background-attachment:fixed}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #6fd3c5;outline-offset:2px}
+header{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;padding:calc(env(safe-area-inset-top) + 10px) 16px 0;box-shadow:0 2px 0 var(--ink2)}
+.hrow1{display:flex;align-items:center;gap:10px}
+header img{width:40px;height:40px;border-radius:10px;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+header h1{font-size:30px;margin:0;flex:1}
+#sync{font-size:16px;white-space:nowrap;background:rgba(255,255,255,.12);border-radius:999px;padding:1px 12px}
+.iconbtn{border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:12px;width:42px;height:40px;cursor:pointer;font-size:22px;display:grid;place-items:center}
+.monthnav{display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 0 2px}
+.monthnav button{border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:999px;width:40px;height:36px;font-size:24px;cursor:pointer}
+.monthnav .m{font-size:27px;font-weight:700;min-width:210px;text-align:center}
+.monthnav .now{width:auto;padding:0 12px;font-size:17px}
+.tabs{display:flex;gap:4px;justify-content:center;margin-top:4px}
+.tabs button{border:0;background:transparent;color:rgba(255,255,255,.7);font-size:21px;padding:4px 18px 6px;border-radius:12px 12px 0 0;cursor:pointer}
+.tabs button.on{background:var(--paper);color:var(--ink);font-weight:700}
+main{max-width:980px;margin:0 auto;padding:16px 14px 110px}
+.summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.sum{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:6px 14px 4px}
+.sum .v{font-size:32px;font-weight:700;line-height:1}
+.sum .k{font-size:18px;color:var(--mute)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+
+/* บัตรบริการ: ตั๋วมีรอยปรุ */
+.ticket{position:relative;display:flex;background:var(--card);border-radius:16px;box-shadow:0 1px 0 var(--line),0 8px 18px -12px rgba(9,64,59,.45);border:1.5px solid var(--line)}
+.ticket .stub{flex:none;width:74px;border-radius:14px 0 0 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#fff;position:relative}
+.ticket .stub .emo{font-size:36px;line-height:1}
+.ticket .stub .pct{font-size:17px;font-weight:700;opacity:.95}
+.ticket .stub::after{content:"";position:absolute;right:-1px;top:8px;bottom:8px;border-right:3px dotted var(--paper)}
+.ticket::before,.ticket::after{content:"";position:absolute;left:62px;width:22px;height:22px;border-radius:50%;background:var(--paper);border:1.5px solid var(--line)}
+.ticket::before{top:-12px;clip-path:inset(50% 0 0 0)} .ticket::after{bottom:-12px;clip-path:inset(0 0 50% 0)}
+.ticket .body{flex:1;min-width:0;padding:10px 14px 12px 16px;display:flex;flex-direction:column;gap:8px}
+.ticket .top{display:flex;align-items:baseline;gap:8px}
+.ticket .name{font-size:28px;font-weight:700;flex:1;line-height:1.1}
+.ticket .meta{color:var(--mute);font-size:18px;margin-top:-6px}
+.ticket.done .stub{filter:saturate(.6)}
+.editbtn{flex:none;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:0 10px;font-size:18px;cursor:pointer;color:var(--ink);white-space:nowrap}
+
+/* ชิปสมาชิก: แตะเพื่อสลับ จ่ายแล้ว/ยังไม่จ่าย */
+.members{display:flex;flex-wrap:wrap;gap:8px}
+.mem{display:flex;align-items:center;gap:6px;border:2px dashed #b9cfca;background:#fff;border-radius:999px;padding:2px 12px 2px 3px;cursor:pointer;font-size:21px;line-height:1.2}
+.mem .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:18px;font-weight:700;color:#fff;flex:none}
+.mem .av.emoji{background:#e7f1ee;font-size:19px}
+.mem.paid{border-style:solid;color:#fff;font-weight:700}
+.mem.paid .ck{display:inline} .mem .ck{display:none}
+.mem.me{cursor:default;border-style:solid;border-color:var(--line);color:var(--mute)}
+.btn{white-space:nowrap;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:5px 14px;cursor:pointer;font-size:20px;color:var(--text)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700}
+.btn.green{background:var(--green);border-color:var(--green);color:#fff;font-weight:700}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.danger{color:var(--red)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grow{flex:1}
+.hint{font-size:18px;color:var(--mute)}
+.owe{color:var(--red);font-weight:700}
+.empty{background:#fff;border:2px dashed #b9cfca;border-radius:18px;padding:34px 20px;text-align:center;color:var(--mute);font-size:22px}
+.empty b{color:var(--ink)}
+h2{font-size:24px;margin:22px 0 8px;color:var(--mute)}
+
+/* รายคน */
+.pcard{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:10px 14px;display:flex;flex-direction:column;gap:6px}
+.pcard .head{display:flex;align-items:center;gap:10px}
+.pcard .head .av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:24px;color:#fff;flex:none}
+.pcard .head .av.emoji{background:#e7f1ee;font-size:26px}
+.pcard .pname{font-size:27px;font-weight:700;flex:1}
+.pcard .total{font-size:26px;font-weight:700}
+.pline{display:flex;align-items:center;gap:8px;border-top:1px dashed var(--line);padding-top:4px}
+.pline .dot{width:12px;height:12px;border-radius:50%;flex:none;align-self:flex-start;margin-top:10px}
+
+dialog{border:0;border-radius:22px;padding:0;width:min(580px,94vw);max-height:90vh;box-shadow:0 24px 70px rgba(9,64,59,.35);color:var(--text)}
+dialog::backdrop{background:rgba(9,64,59,.45)}
+dialog[open]{animation:pop .18s ease-out}
+@keyframes pop{from{transform:translateY(12px);opacity:.4}to{transform:none;opacity:1}}
+@media (max-width:600px){dialog{width:100vw;max-width:100vw;margin:auto 0 0;border-radius:22px 22px 0 0;max-height:92vh}.sheet{padding-bottom:calc(18px + env(safe-area-inset-bottom))}}
+@media (prefers-reduced-motion:reduce){dialog[open]{animation:none}}
+.sheet{padding:18px 20px 20px;display:flex;flex-direction:column;gap:10px;overflow:auto;max-height:90vh}
+.sheet h3{margin:0;font-size:30px;color:var(--ink)}
+label.f{display:flex;flex-direction:column;gap:2px;font-size:19px;color:var(--mute)}
+label.f input,label.f select,label.f textarea{color:var(--text);font-size:23px;border:1.5px solid var(--line);border-radius:12px;padding:5px 12px;background:#fff}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{border:1.5px solid var(--line);border-radius:999px;padding:3px 14px;cursor:pointer;background:#fff;font-size:21px}
+.chip.on{border-color:var(--ink);background:var(--ink);color:#fff;font-weight:700}
+.pick{display:flex;flex-wrap:wrap;gap:6px}
+.pick button{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:#fff;font-size:24px;cursor:pointer;padding:0}
+.pick button.on{border-color:var(--ink);box-shadow:0 0 0 3px #bfe6df}
+.pick.colors button{border:3px solid #fff;box-shadow:0 0 0 1.5px var(--line)}
+.pick.colors button.on{box-shadow:0 0 0 3px var(--ink)}
+.toast{white-space:nowrap;position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink2);color:#fff;border-radius:999px;padding:6px 22px;z-index:99;font-size:21px;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.on{opacity:1}
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));border-radius:999px;padding:10px 24px;font-size:22px;box-shadow:0 8px 22px -6px rgba(9,64,59,.6)}
+@media (max-width:520px){
+  header{padding-left:12px;padding-right:12px} header h1{font-size:26px} header img{width:36px;height:36px}
+  #sync{font-size:0;padding:0 4px;background:none} #sync::first-letter{font-size:20px}
+  .monthnav .m{min-width:0;font-size:25px}
+  main{padding-left:12px;padding-right:12px}
+  .sum .v{font-size:28px}.sum .k{font-size:16px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow1">
+    <img src="icon-192.png" alt="">
+    <h1>หารค่าแอป</h1>
+    <span id="sync"></span>
+    <button class="iconbtn" id="btnSettings" title="ตั้งค่า" aria-label="ตั้งค่า">⚙️</button>
+  </div>
+  <div class="monthnav">
+    <button id="mPrev" aria-label="เดือนก่อน">‹</button>
+    <div class="m" id="mLabel"></div>
+    <button id="mNext" aria-label="เดือนถัดไป">›</button>
+    <button class="now" id="mNow">เดือนนี้</button>
+  </div>
+  <div class="tabs"><button data-tab="svc" class="on">รายบริการ</button><button data-tab="ppl">รายคน</button></div>
+</header>
+<main>
+  <div class="summary" id="summary"></div>
+  <div id="list"></div>
+</main>
+<button class="btn primary fab" id="btnAdd">+ บริการ</button>
+<dialog id="dlg"><div class="sheet" id="sheet"></div></dialog>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+/* ====================== ค่าคงที่ ====================== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyB5jzaZiPGq0oYPqB9MCljXAKzs05rhPBg",
+  authDomain: "sirearth-tutor.firebaseapp.com",
+  projectId: "sirearth-tutor",
+  storageBucket: "sirearth-tutor.firebasestorage.app",
+  messagingSenderId: "472071806564",
+  appId: "1:472071806564:web:88e1ac2575318a320dc971",
+};
+const FIREBASE_VER = '10.12.2';
+// เก็บใน users/{uid}/<ชื่อคอลเลกชันด้านล่าง> แยกจากแอปสอนพิเศษ
+const COL = { people: 'split_people', services: 'split_services', payments: 'split_payments' };
+const DEFAULT_SETTINGS = {
+  bank: 'ธนาคารกสิกรไทย', account: '051-2-69401-2', accountName: 'นายศาสตราวุฒิ อาชนะชัย',
+};
+const SERVICE_EMOJI = ['🎬', '📺', '▶️', '🎵', '🎧', '🏰', '🍿', '🎮', '☁️', '📚', '🤖', '💪'];
+const SERVICE_COLORS = ['#d6282f', '#e5452b', '#1d4ed8', '#0b2a6f', '#6d28d9', '#0f766e', '#15803d', '#b45309', '#be185d', '#111827'];
+const PEOPLE_EMOJI = ['🐶', '🐱', '🐰', '🐻', '🐼', '🦊', '🐯', '🦁', '🐸', '🐧', '🐥', '🦄', '🐙', '🐳', '🌸', '⭐'];
+const AVATAR = ['#0f766e', '#1d4ed8', '#9333ea', '#c2410c', '#be185d', '#4d7c0f', '#0369a1', '#7c3aed'];
+const TH_MONTH_FULL = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const TH_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+/* ====================== ตัวช่วย ====================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const pad = n => String(n).padStart(2, '0');
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const thisYm = () => todayISO().slice(0, 7);
+const ymAdd = (ym, k) => { let [y, m] = ym.split('-').map(Number); m += k; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return `${y}-${pad(m)}`; };
+const ymLabel = ym => { const [y, m] = ym.split('-').map(Number); return `${TH_MONTH_FULL[m - 1]} ${y + 543}`; };
+const ymShort = ym => { const [y, m] = ym.split('-').map(Number); return `${TH_MONTHS[m - 1]} ${String(y + 543).slice(2)}`; };
+const dShort = iso => { const [y, m, d] = iso.split('-').map(Number); return `${d} ${TH_MONTHS[m - 1]}`; };
+const money = n => (+n).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), 2200); }
+const avatarColor = name => AVATAR[[...name].reduce((h, c) => (h * 31 + c.codePointAt(0)) >>> 0, 7) % AVATAR.length];
+const initial = name => [...name].find(c => /[ก-ฮA-Za-z0-9]/.test(c)) || '?';
+const av = (p, cls = 'av') => p.emoji ? `<span class="${cls} emoji">${esc(p.emoji)}</span>` : `<span class="${cls}" style="background:${avatarColor(p.name)}">${esc(initial(p.name))}</span>`;
+
+/* ====================== ข้อมูล ====================== */
+const db = { people: {}, services: {}, payments: {}, settings: { ...DEFAULT_SETTINGS } };
+const LOCAL_KEY = 'split-local-v1', MIRROR_KEY = 'split-cloud-mirror-v1';
+let cloud = null, syncState = 'local';
+function loadFrom(key) {
+  try { const d = JSON.parse(localStorage.getItem(key) || 'null'); if (d) { db.people = d.people || {}; db.services = d.services || {}; db.payments = d.payments || {}; db.settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) }; } } catch (e) { console.warn(e); }
+}
+function saveSnapshot() { try { localStorage.setItem(cloud ? MIRROR_KEY : LOCAL_KEY, JSON.stringify(db)); } catch (e) { console.warn(e); } }
+const docRef = (col, id) => cloud.fs.doc(cloud.fsdb, 'users', cloud.uid, COL[col], id);
+function put(col, obj) {
+  db[col][obj.id] = obj; saveSnapshot(); render();
+  if (cloud) cloud.fs.setDoc(docRef(col, obj.id), obj).catch(e => toast('ซิงก์ไม่สำเร็จ: ' + e.code));
+}
+function del(col, id) {
+  delete db[col][id]; saveSnapshot(); render();
+  if (cloud) cloud.fs.deleteDoc(docRef(col, id)).catch(e => toast('ซิงก์ไม่สำเร็จ: ' + e.code));
+}
+function putSettings(patch) {
+  db.settings = { ...db.settings, ...patch }; saveSnapshot(); render();
+  if (cloud) cloud.fs.setDoc(cloud.fs.doc(cloud.fsdb, 'users', cloud.uid, 'meta', 'split_settings'), db.settings).catch(e => toast('ซิงก์ไม่สำเร็จ: ' + e.code));
+}
+
+/* ====================== ตรรกะ ====================== */
+let curYm = thisYm(), tab = 'svc';
+const payId = (ym, sid, pid) => `${ym}_${sid}_${pid}`;
+const isPaid = (ym, sid, pid) => !!db.payments[payId(ym, sid, pid)];
+const headCount = s => (s.members || []).length + (s.includeMe ? 1 : 0);
+const shareOf = s => s.share != null && s.share !== '' ? +s.share : Math.ceil((+s.price || 0) / Math.max(1, headCount(s)));
+const activeIn = (s, ym) => !s.paused && (s.startYm || '0000-00') <= ym && (!s.endYm || ym <= s.endYm);
+const sortedServices = () => Object.values(db.services).sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || (a.createdAt || 0) - (b.createdAt || 0));
+const personName = pid => db.people[pid]?.name || '(ลบแล้ว)';
+// รายการที่คนนี้ค้าง ตั้งแต่เดือนเริ่มของบริการจนถึงเดือนที่ดูอยู่
+function overdue(pid, uptoYm) {
+  const out = [];
+  for (const s of sortedServices()) {
+    if (!(s.members || []).includes(pid)) continue;
+    let ym = s.startYm || uptoYm;
+    let guard = 0;
+    while (ym <= uptoYm && guard++ < 240) {
+      if (activeIn(s, ym) && !isPaid(ym, s.id, pid)) out.push({ s, ym });
+      ym = ymAdd(ym, 1);
+    }
+  }
+  return out;
+}
+function togglePaid(ym, sid, pid) {
+  const id = payId(ym, sid, pid), s = db.services[sid];
+  if (db.payments[id]) {
+    if (!confirm(`ยกเลิก "${personName(pid)} จ่ายแล้ว" ของ ${s.name} เดือน${ymLabel(ym)}?`)) return;
+    del('payments', id);
+  } else {
+    put('payments', { id, ym, sid, pid, amount: shareOf(s), paidAt: todayISO() });
+    toast(`${personName(pid)} จ่าย ${s.name} แล้ว ✓`);
+  }
+}
+
+/* ====================== หน้าหลัก ====================== */
+function render() {
+  $('#mLabel').textContent = ymLabel(curYm);
+  $('#mNow').style.visibility = curYm === thisYm() ? 'hidden' : 'visible';
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  $('#btnAdd').textContent = tab === 'svc' ? '+ บริการ' : '+ คน';
+  const svcs = sortedServices().filter(s => activeIn(s, curYm));
+  let exp = 0, got = 0, unpaidN = 0;
+  svcs.forEach(s => (s.members || []).forEach(pid => { const sh = shareOf(s); exp += sh; if (isPaid(curYm, s.id, pid)) got += sh; else unpaidN++; }));
+  $('#summary').innerHTML = `
+    <div class="sum"><div class="v" style="color:var(--green)">${money(got)}<span style="font-size:20px;color:var(--mute)"> / ${money(exp)}</span></div><div class="k">บาท ได้รับแล้วเดือนนี้</div></div>
+    <div class="sum"><div class="v" style="color:${unpaidN ? 'var(--red)' : '#a9bdb8'}">${unpaidN}</div><div class="k">รายการที่ยังไม่จ่าย</div></div>`;
+  $('#list').innerHTML = tab === 'svc' ? renderServices(svcs) : renderPeople();
+  document.querySelectorAll('[data-act]').forEach(b => b.onclick = e => { e.stopPropagation(); ACTIONS[b.dataset.act](b.dataset); });
+}
+function renderServices(svcs) {
+  const all = sortedServices();
+  if (!all.length) return `<div class="empty">ยังไม่มีบริการที่หารกัน<br>กด <b>+ บริการ</b> เพื่อเพิ่ม เช่น Netflix, YouTube Premium, Disney+</div>`;
+  if (!svcs.length) return `<div class="empty">เดือนนี้ไม่มีบริการที่ต้องเก็บเงิน</div>`;
+  const inactive = all.filter(s => !activeIn(s, curYm));
+  return `<div class="grid">${svcs.map(ticketHTML).join('')}</div>` +
+    (inactive.length ? `<h2>ไม่ได้เก็บเดือนนี้</h2><div class="row">${inactive.map(s => `<button class="btn" data-act="editSvc" data-id="${s.id}">${esc(s.emoji || '🎬')} ${esc(s.name)}</button>`).join('')}</div>` : '');
+}
+function ticketHTML(s) {
+  const mem = (s.members || []).filter(pid => db.people[pid]);
+  const paidN = mem.filter(pid => isPaid(curYm, s.id, pid)).length;
+  const done = mem.length && paidN === mem.length;
+  const color = s.color || SERVICE_COLORS[0];
+  return `<div class="ticket ${done ? 'done' : ''}">
+    <div class="stub" style="background:${color}"><span class="emo">${done ? '✅' : esc(s.emoji || '🎬')}</span><span class="pct">${paidN}/${mem.length}</span></div>
+    <div class="body">
+      <div class="top"><div class="name">${esc(s.name)}</div><button class="editbtn" data-act="editSvc" data-id="${s.id}">✏️ แก้ไข</button></div>
+      <div class="meta">${money(s.price)} บาท/เดือน · คนละ <b style="color:var(--text)">${money(shareOf(s))}</b> บาท${s.dueDay ? ` · ตัดเงินวันที่ ${s.dueDay}` : ''}</div>
+      <div class="members">
+        ${mem.map(pid => { const p = db.people[pid], paid = isPaid(curYm, s.id, pid);
+          return `<button class="mem ${paid ? 'paid' : ''}" style="${paid ? `background:${color};border-color:${color}` : ''}" data-act="toggle" data-sid="${s.id}" data-pid="${pid}" title="${paid ? 'จ่ายแล้ว แตะเพื่อยกเลิก' : 'แตะเมื่อจ่ายแล้ว'}">${av(p)}${esc(p.name)}<span class="ck">✓</span></button>`; }).join('')}
+        ${s.includeMe ? `<span class="mem me"><span class="av emoji">🙋</span>ฉัน</span>` : ''}
+        ${!mem.length ? '<span class="hint">ยังไม่มีสมาชิก กด แก้ไข เพื่อเพิ่มคน</span>' : ''}
+      </div>
+      ${mem.length && !done ? `<div class="row"><button class="btn" data-act="remind" data-id="${s.id}">📋 คัดลอกข้อความทวง</button></div>` : ''}
+    </div>
+  </div>`;
+}
+function renderPeople() {
+  const ppl = Object.values(db.people).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+  if (!ppl.length) return `<div class="empty">ยังไม่มีรายชื่อคนที่หารด้วย<br>กด <b>+ คน</b> เพื่อเพิ่ม</div>`;
+  const rows = ppl.map(p => {
+    const od = overdue(p.id, curYm);
+    const thisMonth = sortedServices().filter(s => activeIn(s, curYm) && (s.members || []).includes(p.id));
+    return { p, od, thisMonth, owe: od.reduce((t, x) => t + shareOf(x.s), 0) };
+  }).sort((a, b) => b.owe - a.owe || a.p.name.localeCompare(b.p.name, 'th'));
+  return `<div class="grid">${rows.map(({ p, od, thisMonth, owe }) => `
+    <div class="pcard">
+      <div class="head">${av(p)}<div class="pname">${esc(p.name)}</div>
+        <div class="total" style="color:${owe ? 'var(--red)' : 'var(--green)'}">${owe ? `ค้าง ${money(owe)}` : 'ครบแล้ว ✓'}</div>
+        <button class="editbtn" data-act="editPerson" data-id="${p.id}">✏️</button></div>
+      ${thisMonth.length ? '' : '<div class="hint">ไม่ได้อยู่ในบริการไหนเดือนนี้</div>'}
+      ${thisMonth.map(s => { const paid = isPaid(curYm, s.id, p.id); const pay = db.payments[payId(curYm, s.id, p.id)];
+        return `<div class="pline"><span class="dot" style="background:${s.color}"></span><span class="grow" style="min-width:0;line-height:1.15">${esc(s.emoji || '')} ${esc(s.name)}<br><span class="hint">${money(shareOf(s))} บาท${paid ? ` · จ่าย ${dShort(pay.paidAt)}` : ''}</span></span>
+          <button class="btn ${paid ? '' : 'green'}" style="padding:0 12px;font-size:19px;${paid ? 'color:var(--green)' : ''}" data-act="toggle" data-sid="${s.id}" data-pid="${p.id}">${paid ? '✓ จ่ายแล้ว' : 'รับเงิน'}</button></div>`; }).join('')}
+      ${od.filter(x => x.ym !== curYm).length ? `<div class="hint owe">ค้างเดือนก่อน: ${od.filter(x => x.ym !== curYm).map(x => `<button class="btn" style="padding:0 8px;font-size:18px;color:var(--red)" data-act="toggle" data-ym="${x.ym}" data-sid="${x.s.id}" data-pid="${p.id}">${esc(x.s.name)} ${ymShort(x.ym)}</button>`).join(' ')}</div>` : ''}
+    </div>`).join('')}</div>`;
+}
+
+/* ====================== กล่องโต้ตอบ ====================== */
+function openSheet(html) { $('#sheet').innerHTML = html; if (!$('#dlg').open) $('#dlg').showModal(); return $('#sheet'); }
+const closeSheet = () => $('#dlg').close();
+$('#dlg').addEventListener('click', e => { if (e.target === $('#dlg')) closeSheet(); });
+const ACTIONS = {
+  toggle: d => togglePaid(d.ym || curYm, d.sid, d.pid),
+  editSvc: d => showServiceForm(d.id),
+  editPerson: d => showPersonForm(d.id),
+  remind: d => copyReminder(d.id),
+};
+
+function showServiceForm(id) {
+  const s = id ? db.services[id] : { emoji: '🎬', color: SERVICE_COLORS[0], members: [], includeMe: true, startYm: curYm };
+  let emoji = s.emoji, color = s.color, members = [...(s.members || [])];
+  const ppl = Object.values(db.people).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+  const sh = openSheet(`
+    <h3>${id ? 'แก้ไขบริการ' : 'เพิ่มบริการ'}</h3>
+    <label class="f">ชื่อบริการ<input id="sName" value="${esc(s.name)}" placeholder="เช่น Netflix" autocomplete="off"></label>
+    <div class="f" style="color:var(--mute);font-size:19px">ไอคอน</div><div class="pick" id="sEmo"></div>
+    <div class="f" style="color:var(--mute);font-size:19px">สีบัตร</div><div class="pick colors" id="sCol"></div>
+    <div class="row">
+      <label class="f grow">ราคาต่อเดือน (บาท)<input id="sPrice" type="number" inputmode="decimal" value="${s.price ?? ''}"></label>
+      <label class="f grow">ตัดเงินวันที่ (ไม่ใส่ก็ได้)<input id="sDue" type="number" min="1" max="31" inputmode="numeric" value="${s.dueDay ?? ''}"></label>
+    </div>
+    <div class="f" style="color:var(--mute);font-size:19px">คนที่หารด้วย (แตะเพื่อเลือก)</div>
+    <div class="chips" id="sMem"></div>
+    <div class="row"><input id="sNewP" placeholder="เพิ่มชื่อคนใหม่" style="flex:1;font-size:22px;border:1.5px solid var(--line);border-radius:12px;padding:4px 12px"><button class="btn" id="sAddP">+ เพิ่ม</button></div>
+    <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sMe" ${s.includeMe ? 'checked' : ''}> ฉันใช้ด้วย (นับฉันเป็น 1 ส่วน)</label>
+    <label class="f">หารคนละ (บาท) <span class="hint" id="sAuto"></span><input id="sShare" type="number" inputmode="decimal" placeholder="ปล่อยว่าง = หารเท่ากันอัตโนมัติ" value="${s.share ?? ''}"></label>
+    <label class="f">เริ่มเก็บเงินเดือน<input id="sStart" type="month" value="${s.startYm || curYm}"></label>
+    ${id ? `<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sStop" ${s.endYm ? 'checked' : ''}> เลิกใช้แล้ว (ไม่เก็บตั้งแต่เดือนถัดจาก <input id="sEnd" type="month" value="${s.endYm || curYm}" style="font-size:19px">)</label>` : ''}
+    <div class="row"><button class="btn ghost" id="sCancel">ยกเลิก</button><span class="grow"></span>
+      ${id ? '<button class="btn danger" id="sDel">ลบ</button>' : ''}<button class="btn primary" id="sSave">บันทึก</button></div>`);
+  const draw = () => {
+    $('#sEmo').innerHTML = SERVICE_EMOJI.map(e => `<button type="button" class="${e === emoji ? 'on' : ''}" data-e="${e}">${e}</button>`).join('');
+    $('#sCol').innerHTML = SERVICE_COLORS.map(c => `<button type="button" class="${c === color ? 'on' : ''}" data-c="${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join('');
+    const all = Object.values(db.people).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+    $('#sMem').innerHTML = all.length ? all.map(p => `<span class="chip ${members.includes(p.id) ? 'on' : ''}" data-p="${p.id}">${esc(p.emoji || '')} ${esc(p.name)}</span>`).join('') : '<span class="hint">ยังไม่มีรายชื่อ พิมพ์ชื่อด้านล่างแล้วกด + เพิ่ม</span>';
+    sh.querySelectorAll('#sEmo button').forEach(b => b.onclick = () => { emoji = b.dataset.e; draw(); });
+    sh.querySelectorAll('#sCol button').forEach(b => b.onclick = () => { color = b.dataset.c; draw(); });
+    sh.querySelectorAll('#sMem .chip').forEach(c => c.onclick = () => { const p = c.dataset.p; members = members.includes(p) ? members.filter(x => x !== p) : [...members, p]; draw(); });
+    const n = members.length + ($('#sMe').checked ? 1 : 0), price = +$('#sPrice').value || 0;
+    $('#sAuto').textContent = n ? `(หารเท่ากัน ${n} คน = ${money(Math.ceil(price / n))} บาท)` : '';
+  };
+  draw();
+  $('#sPrice').oninput = draw; $('#sMe').onchange = draw;
+  $('#sAddP').onclick = () => {
+    const name = $('#sNewP').value.trim(); if (!name) return;
+    const p = { id: uid(), name, createdAt: Date.now() }; put('people', p); members.push(p.id); $('#sNewP').value = ''; draw();
+  };
+  $('#sNewP').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('#sAddP').click(); } };
+  $('#sCancel').onclick = closeSheet;
+  if (id) $('#sDel').onclick = () => {
+    if (!confirm(`ลบ "${s.name}" และประวัติการจ่ายทั้งหมดของบริการนี้?\nถ้าแค่เลิกใช้ ให้ติ๊ก "เลิกใช้แล้ว" แทน จะเก็บประวัติไว้`)) return;
+    Object.values(db.payments).filter(x => x.sid === id).forEach(x => del('payments', x.id)); del('services', id); closeSheet();
+  };
+  $('#sSave').onclick = () => {
+    const name = $('#sName').value.trim(); if (!name) { $('#sName').focus(); return; }
+    const share = $('#sShare').value.trim();
+    put('services', { ...s, id: id || uid(), name, emoji, color, members, price: +$('#sPrice').value || 0, dueDay: +$('#sDue').value || null,
+      includeMe: $('#sMe').checked, share: share === '' ? null : +share, startYm: $('#sStart').value || curYm,
+      endYm: id && $('#sStop').checked ? $('#sEnd').value : null, createdAt: s.createdAt || Date.now() });
+    closeSheet(); toast('บันทึกแล้ว');
+  };
+  if (!id) setTimeout(() => $('#sName').focus(), 50);
+}
+
+function showPersonForm(id) {
+  const p = id ? db.people[id] : {};
+  let emoji = p.emoji || null;
+  const inSvcs = sortedServices().filter(s => (s.members || []).includes(id));
+  const sh = openSheet(`
+    <h3>${id ? 'แก้ไขข้อมูลคน' : 'เพิ่มคน'}</h3>
+    <label class="f">ชื่อ<input id="pName" value="${esc(p.name)}" autocomplete="off"></label>
+    <div class="f" style="color:var(--mute);font-size:19px">ไอคอน</div><div class="pick" id="pEmo"></div>
+    ${id ? `<div class="hint">อยู่ในบริการ: ${inSvcs.map(s => esc(s.name)).join(', ') || '-'} (เพิ่ม/เอาออกได้ที่หน้าแก้ไขบริการ)</div>` : ''}
+    <div class="row"><button class="btn ghost" id="pCancel">ยกเลิก</button><span class="grow"></span>
+      ${id ? '<button class="btn danger" id="pDel">ลบ</button>' : ''}<button class="btn primary" id="pSave">บันทึก</button></div>`);
+  const draw = () => {
+    $('#pEmo').innerHTML = `<button type="button" class="${!emoji ? 'on' : ''}" data-e="" style="background:${avatarColor($('#pName').value || p.name || '?')};color:#fff;font-weight:700">${esc(initial($('#pName').value || p.name || '?'))}</button>` +
+      PEOPLE_EMOJI.map(e => `<button type="button" class="${e === emoji ? 'on' : ''}" data-e="${e}">${e}</button>`).join('');
+    sh.querySelectorAll('#pEmo button').forEach(b => b.onclick = () => { emoji = b.dataset.e || null; draw(); });
+  };
+  draw(); $('#pName').oninput = () => { if (!emoji) draw(); };
+  $('#pCancel').onclick = closeSheet;
+  if (id) $('#pDel').onclick = () => {
+    if (!confirm(`ลบ "${p.name}" ออกจากทุกบริการ และลบประวัติการจ่ายของคนนี้?`)) return;
+    inSvcs.forEach(s => put('services', { ...s, members: s.members.filter(x => x !== id) }));
+    Object.values(db.payments).filter(x => x.pid === id).forEach(x => del('payments', x.id)); del('people', id); closeSheet();
+  };
+  $('#pSave').onclick = () => {
+    const name = $('#pName').value.trim(); if (!name) { $('#pName').focus(); return; }
+    put('people', { ...p, id: id || uid(), name, emoji, createdAt: p.createdAt || Date.now() }); closeSheet(); toast('บันทึกแล้ว');
+  };
+  if (!id) setTimeout(() => $('#pName').focus(), 50);
+}
+
+async function copyReminder(sid) {
+  const s = db.services[sid], S = db.settings;
+  const unpaid = (s.members || []).filter(pid => db.people[pid] && !isPaid(curYm, sid, pid)).map(personName);
+  const text = `${s.emoji || ''} ${s.name} เดือน${ymLabel(curYm)}\nคนละ ${money(shareOf(s))} บาท\nยังไม่ได้โอน: ${unpaid.join(', ')}\n\nโอนเข้า ${S.bank}\nเลขที่บัญชี ${S.account}\nชื่อบัญชี ${S.accountName}`;
+  try { await navigator.clipboard.writeText(text); toast('คัดลอกข้อความแล้ว วางใน LINE ได้เลย'); }
+  catch (e) { openSheet(`<h3>ข้อความทวง</h3><textarea style="font-size:21px;min-height:220px;border:1.5px solid var(--line);border-radius:12px;padding:8px">${esc(text)}</textarea><button class="btn" onclick="document.getElementById('dlg').close()">ปิด</button>`); }
+}
+
+/* ---------- ตั้งค่า ---------- */
+function showSettings() {
+  const S = db.settings;
+  openSheet(`
+    <div class="row"><h3 class="grow">ตั้งค่า</h3><button class="btn ghost" id="xClose">ปิด</button></div>
+    <h2 style="margin:4px 0 0">บัญชีรับเงิน (ใช้ในข้อความทวง)</h2>
+    <label class="f">ธนาคาร<input id="xBank" value="${esc(S.bank)}"></label>
+    <div class="row"><label class="f grow">เลขที่บัญชี<input id="xAcc" value="${esc(S.account)}"></label><label class="f grow">ชื่อบัญชี<input id="xName" value="${esc(S.accountName)}"></label></div>
+    <button class="btn primary" id="xSave">บันทึกการตั้งค่า</button>
+    <h2 style="margin:10px 0 0">ซิงก์ข้ามเครื่อง</h2>
+    <div id="cloudBox"></div>
+    <h2 style="margin:10px 0 0">สำรองข้อมูล</h2>
+    <div class="row"><button class="btn" id="xExport">ส่งออกไฟล์สำรอง (.json)</button>
+      <label class="btn">นำเข้าไฟล์สำรอง<input type="file" id="xImport" accept=".json,application/json" hidden></label></div>`);
+  $('#xClose').onclick = closeSheet;
+  $('#xSave').onclick = () => { putSettings({ bank: $('#xBank').value, account: $('#xAcc').value, accountName: $('#xName').value }); toast('บันทึกแล้ว'); };
+  $('#xExport').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(db, null, 1)], { type: 'application/json' })); a.download = `หารค่าแอป-สำรอง-${todayISO()}.json`; a.click(); };
+  $('#xImport').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try { const d = JSON.parse(await f.text()); if (!d.services || !confirm('นำเข้าข้อมูลจากไฟล์นี้?')) return;
+      for (const col of ['people', 'services', 'payments']) Object.values(d[col] || {}).forEach(o => put(col, o)); if (d.settings) putSettings(d.settings); toast('นำเข้าแล้ว');
+    } catch (err) { alert('ไฟล์ไม่ถูกต้อง'); }
+  };
+  renderCloudBox();
+}
+function renderCloudBox() {
+  const box = $('#cloudBox'); if (!box) return;
+  if (cloud) {
+    box.innerHTML = `<div>เชื่อมต่อแล้ว: <b>${esc(cloud.email)}</b></div><div class="hint">ใช้บัญชีเดียวกับแอปสอนพิเศษ</div><button class="btn" id="cOut">ออกจากระบบ</button>`;
+    $('#cOut').onclick = async () => { if (confirm('ออกจากระบบ?')) { await cloud.authApi.signOut(cloud.auth); localStorage.removeItem('split-signed-in'); location.reload(); } };
+    return;
+  }
+  box.innerHTML = `<div class="hint">${syncState === 'error' ? 'โหลด Firebase ไม่สำเร็จ (ตรวจอินเทอร์เน็ต)' : 'ล็อกอินด้วยอีเมลและรหัสผ่านเดียวกับแอปสอนพิเศษ'}</div>
+    <label class="f">อีเมล<input id="cEmail" type="email" autocomplete="username"></label>
+    <label class="f">รหัสผ่าน<input id="cPass" type="password" autocomplete="current-password"></label>
+    <div class="row"><button class="btn primary" id="cIn">เข้าสู่ระบบ</button></div>`;
+  $('#cIn').onclick = async () => {
+    try { const api = await loadFirebase(); await api.authApi.signInWithEmailAndPassword(api.auth, $('#cEmail').value.trim(), $('#cPass').value); }
+    catch (e) { alert('เข้าสู่ระบบไม่สำเร็จ: ' + (e.code || e.message)); }
+  };
+}
+
+/* ====================== Firebase ====================== */
+let fbApi = null;
+async function loadFirebase() {
+  if (fbApi) return fbApi;
+  const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VER}/`;
+  const [app, authApi, fs] = await Promise.all([import(base + 'firebase-app.js'), import(base + 'firebase-auth.js'), import(base + 'firebase-firestore.js')]);
+  const a = app.initializeApp(FIREBASE_CONFIG);
+  const auth = authApi.getAuth(a);
+  let fsdb;
+  try { fsdb = fs.initializeFirestore(a, { localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }) }); } catch (e) { fsdb = fs.getFirestore(a); }
+  fbApi = { auth, authApi, fs, fsdb };
+  authApi.onAuthStateChanged(auth, user => { if (user) startCloud(user); else { syncState = 'local'; showSync(); } });
+  return fbApi;
+}
+function startCloud(user) {
+  if (cloud && cloud.uid === user.uid) return;
+  const { fs, fsdb, auth, authApi } = fbApi;
+  const localData = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null');
+  cloud = { fs, fsdb, auth, authApi, uid: user.uid, email: user.email };
+  localStorage.setItem('split-signed-in', '1');
+  loadFrom(MIRROR_KEY);
+  const seen = new Set();
+  const done = () => {
+    if (seen.size < 4) return;
+    if (localData && Object.keys(localData.services || {}).length && !localStorage.getItem('split-migrated-' + user.uid)) {
+      localStorage.setItem('split-migrated-' + user.uid, '1');
+      if (confirm(`พบข้อมูลในเครื่องนี้ (${Object.keys(localData.services).length} บริการ) อัปโหลดขึ้นคลาวด์ไหม?`))
+        for (const col of ['people', 'services', 'payments']) Object.values(localData[col] || {}).forEach(o => put(col, o));
+    }
+  };
+  const mark = (k, snap) => { seen.add(k); syncState = snap.metadata.fromCache ? 'offline' : (snap.metadata.hasPendingWrites ? 'pending' : 'synced'); showSync(); saveSnapshot(); render(); done(); };
+  for (const col of ['people', 'services', 'payments']) {
+    fs.onSnapshot(fs.collection(fsdb, 'users', user.uid, COL[col]), { includeMetadataChanges: true }, snap => {
+      const o = {}; snap.forEach(d => o[d.id] = d.data()); db[col] = o; mark(col, snap);
+    }, e => { syncState = 'error'; showSync(); toast('ซิงก์ผิดพลาด: ' + e.code); });
+  }
+  fs.onSnapshot(fs.doc(fsdb, 'users', user.uid, 'meta', 'split_settings'), { includeMetadataChanges: true }, snap => {
+    if (snap.exists()) db.settings = { ...DEFAULT_SETTINGS, ...snap.data() }; mark('settings', snap);
+  });
+  showSync(); renderCloudBox();
+}
+function showSync() {
+  $('#sync').textContent = cloud ? ({ synced: '☁️ ซิงก์แล้ว', pending: '☁️ กำลังซิงก์', offline: '☁️ ออฟไลน์', error: '⚠️ ซิงก์ไม่ได้' }[syncState] || '☁️') : '🔑 ยังไม่ล็อกอิน';
+}
+
+/* ====================== เริ่มต้น ====================== */
+$('#btnSettings').onclick = showSettings;
+$('#btnAdd').onclick = () => tab === 'svc' ? showServiceForm() : showPersonForm();
+$('#mPrev').onclick = () => { curYm = ymAdd(curYm, -1); render(); };
+$('#mNext').onclick = () => { curYm = ymAdd(curYm, 1); render(); };
+$('#mNow').onclick = () => { curYm = thisYm(); render(); };
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; render(); });
+loadFrom(localStorage.getItem('split-signed-in') ? MIRROR_KEY : LOCAL_KEY);
+render(); showSync();
+document.fonts.ready.then(render);
+loadFirebase().catch(e => { console.warn(e); syncState = 'error'; showSync(); });
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js');
+document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+window.__split = { db, render };
+</script>
+</body>
+</html>
