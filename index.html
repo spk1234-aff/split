@@ -290,7 +290,7 @@ function ticketHTML(s) {
   const done = mem.length && paidN === mem.length;
   const color = s.color || SERVICE_COLORS[0];
   return `<div class="ticket ${done ? 'done' : ''}">
-    <div class="stub" style="background:${color}"><span class="emo">${done ? '✅' : s.img ? `<img class="simg" src="${esc(s.img)}" alt="">` : esc(s.emoji || '🎬')}</span><span class="pct">${paidN}/${mem.length}</span></div>
+    <div class="stub" style="background:${color}"><span class="emo">${done ? '✅' : (s.img || (s.imgDrive && driveImg(s.imgDrive))) ? `<img class="simg" src="${esc(s.img || driveImg(s.imgDrive))}" alt="">` : esc(s.emoji || '🎬')}</span><span class="pct">${paidN}/${mem.length}</span></div>
     <div class="body">
       <div class="top"><div class="name">${esc(s.name)}</div><button class="editbtn" data-act="editSvc" data-id="${s.id}">✏️ แก้ไข</button></div>
       <div class="meta">${money(s.price)} บาท/เดือน · คนละ <b style="color:var(--text)">${money(shareOf(s))}</b> บาท${s.dueDay ? ` · ตัดเงินวันที่ ${s.dueDay}` : ''}</div>
@@ -338,7 +338,7 @@ const ACTIONS = {
 
 function showServiceForm(id) {
   const s = id ? db.services[id] : { emoji: '🎬', color: SERVICE_COLORS[0], members: [], includeMe: true, startYm: curYm };
-  let emoji = s.emoji, color = s.color, img = s.img || null, members = [...(s.members || [])];
+  let emoji = s.emoji, color = s.color, img = s.img || null, imgDrive = s.imgDrive || null, members = [...(s.members || [])];
   const ppl = Object.values(db.people).sort((a, b) => a.name.localeCompare(b.name, 'th'));
   const sh = openSheet(`
     <h3>${id ? 'แก้ไขบริการ' : 'เพิ่มบริการ'}</h3>
@@ -360,14 +360,15 @@ function showServiceForm(id) {
     <div class="row"><button class="btn ghost" id="sCancel">ยกเลิก</button><span class="grow"></span>
       ${id ? '<button class="btn danger" id="sDel">ลบ</button>' : ''}<button class="btn primary" id="sSave">บันทึก</button></div>`);
   const draw = () => {
-    $('#sEmo').innerHTML = (img ? `<button type="button" class="on" data-img="1" title="รูปที่อัปโหลด"><img src="${esc(img)}" alt=""></button>` : '') +
-      SERVICE_EMOJI.map(e => `<button type="button" class="${!img && e === emoji ? 'on' : ''}" data-e="${e}">${e}</button>`).join('') +
+    const shown = img || (imgDrive && driveImg(imgDrive));
+    $('#sEmo').innerHTML = (shown ? `<button type="button" class="on" data-img="1" title="รูปที่อัปโหลด"><img src="${esc(shown)}" alt=""></button>` : '') +
+      SERVICE_EMOJI.map(e => `<button type="button" class="${!shown && e === emoji ? 'on' : ''}" data-e="${e}">${e}</button>`).join('') +
       `<label class="btn" style="align-self:center">📷 ใช้รูปภาพ<input type="file" id="sImg" accept="image/*" hidden></label>`;
-    $('#sImg').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { img = await resizeImage(f); draw(); } catch (err) { toast('เปิดรูปนี้ไม่ได้'); } };
+    $('#sImg').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { img = await resizeImage(f); imgDrive = null; draw(); } catch (err) { toast('เปิดรูปนี้ไม่ได้'); } };
     $('#sCol').innerHTML = SERVICE_COLORS.map(c => `<button type="button" class="${c === color ? 'on' : ''}" data-c="${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join('');
     const all = Object.values(db.people).sort((a, b) => a.name.localeCompare(b.name, 'th'));
     $('#sMem').innerHTML = all.length ? all.map(p => `<span class="chip ${members.includes(p.id) ? 'on' : ''}" data-p="${p.id}">${esc(p.emoji || '')} ${esc(p.name)}</span>`).join('') : '<span class="hint">ยังไม่มีรายชื่อ พิมพ์ชื่อด้านล่างแล้วกด + เพิ่ม</span>';
-    sh.querySelectorAll('#sEmo button').forEach(b => b.onclick = () => { if (b.dataset.img) return; emoji = b.dataset.e; img = null; draw(); });
+    sh.querySelectorAll('#sEmo button').forEach(b => b.onclick = () => { if (b.dataset.img) return; emoji = b.dataset.e; img = null; imgDrive = null; draw(); });
     sh.querySelectorAll('#sCol button').forEach(b => b.onclick = () => { color = b.dataset.c; draw(); });
     sh.querySelectorAll('#sMem .chip').forEach(c => c.onclick = () => { const p = c.dataset.p; members = members.includes(p) ? members.filter(x => x !== p) : [...members, p]; draw(); });
     const n = members.length + ($('#sMe').checked ? 1 : 0), price = +$('#sPrice').value || 0;
@@ -375,7 +376,7 @@ function showServiceForm(id) {
   };
   draw();
   sh.querySelectorAll('#sPre .chip').forEach(c => c.onclick = () => {
-    const x = PRESETS[+c.dataset.i]; $('#sName').value = x.name; emoji = x.emoji; color = x.color; img = null;
+    const x = PRESETS[+c.dataset.i]; $('#sName').value = x.name; emoji = x.emoji; color = x.color; img = null; imgDrive = null;
     sh.querySelectorAll('#sPre .chip').forEach(y => y.classList.toggle('on', y === c)); draw(); $('#sPrice').focus();
   });
   $('#sPrice').oninput = draw; $('#sMe').onchange = draw;
@@ -392,10 +393,10 @@ function showServiceForm(id) {
   $('#sSave').onclick = () => {
     const name = $('#sName').value.trim(); if (!name) { $('#sName').focus(); return; }
     const share = $('#sShare').value.trim();
-    put('services', { ...s, id: id || uid(), name, emoji, color, img, members, price: +$('#sPrice').value || 0, dueDay: +$('#sDue').value || null,
+    put('services', { ...s, id: id || uid(), name, emoji, color, img, imgDrive, members, price: +$('#sPrice').value || 0, dueDay: +$('#sDue').value || null,
       includeMe: $('#sMe').checked, share: share === '' ? null : +share, startYm: $('#sStart').value || curYm,
       endYm: id && $('#sStop').checked ? $('#sEnd').value : null, createdAt: s.createdAt || Date.now() });
-    closeSheet(); toast('บันทึกแล้ว');
+    closeSheet(); toast('บันทึกแล้ว'); setTimeout(migrateIcons, 300);
   };
   if (!id) setTimeout(() => $('#sName').focus(), 50);
 }
@@ -480,6 +481,72 @@ function renderCloudBox() {
   };
 }
 
+/* ====================== Google Drive (ผ่าน Apps Script ของบัญชีนี้) ======================
+   ที่อยู่ประตู (url) และรหัสลับ (key) เก็บใน Firebase: users/{uid}/meta/drive — อ่านได้เฉพาะบัญชีที่ล็อกอิน
+   ไม่ใส่ไว้ในโค้ดนี้ เพราะโค้ดแอปเปิดสาธารณะบน GitHub */
+let driveCfg = null;
+async function loadDriveCfg() {
+  if (!cloud) return null;
+  try { const s = await cloud.fs.getDoc(cloud.fs.doc(cloud.fsdb, 'users', cloud.uid, 'meta', 'drive')); driveCfg = s.exists() ? s.data() : null; } catch (e) { console.warn(e); }
+  return driveCfg;
+}
+async function driveCall(body) {
+  if (!driveCfg) await loadDriveCfg();
+  if (!driveCfg?.url) throw new Error('ยังไม่ได้เชื่อม Google Drive');
+  const r = await fetch(driveCfg.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ ...body, key: driveCfg.key }) });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'drive-error');
+  return j;
+}
+const blobToB64 = b => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = rej; fr.readAsDataURL(b); });
+const dataUrlToBlob = u => { const [h, d] = u.split(','); const mime = h.match(/:(.*?);/)[1]; const bin = atob(d); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return new Blob([a], { type: mime }); };
+async function driveUpload(path, name, blob, opts = {}) {
+  return (await driveCall({ action: 'upload', path, name, mime: blob.type || 'application/octet-stream', data: await blobToB64(blob), ...opts })).file;
+}
+// รูปเล็ก (ไอคอน) ที่เก็บใน Drive: จำไว้ในเครื่องเพื่อแสดงผลเร็วและใช้ออฟไลน์ได้
+const imgCacheKey = id => 'drive-img-' + id;
+const imgPending = new Set();
+function driveImg(id) {
+  let v = null; try { v = localStorage.getItem(imgCacheKey(id)); } catch (e) {}
+  if (v) return v;
+  if (!imgPending.has(id) && cloud) {
+    imgPending.add(id);
+    driveCall({ action: 'get', id }).then(j => { try { localStorage.setItem(imgCacheKey(id), `data:${j.file.mime};base64,${j.data}`); } catch (e) {} render(); }).catch(() => {}).finally(() => setTimeout(() => imgPending.delete(id), 30000));
+  }
+  return null;
+}
+// สำรองข้อมูลวันละครั้ง: ไฟล์ .json ลงโฟลเดอร์ [ชื่อแอป]/สำรองข้อมูล/[ปี พ.ศ.]
+async function dailyBackup(appName, getData) {
+  if (!cloud) return;
+  const today = todayISO();
+  const ref = cloud.fs.doc(cloud.fsdb, 'users', cloud.uid, 'meta', 'drive_backups');
+  try {
+    const s = await cloud.fs.getDoc(ref);
+    if (s.exists() && s.data()[appName] === today) return;
+    if (!(await loadDriveCfg())?.url) return;
+    const blob = new Blob([JSON.stringify({ app: appName, date: today, data: getData() }, null, 1)], { type: 'application/json' });
+    await driveUpload([appName, 'สำรองข้อมูล', String(+today.slice(0, 4) + 543)], `${appName}-สำรอง-${today}.json`, blob, { replace: true });
+    await cloud.fs.setDoc(ref, { [appName]: today }, { merge: true });
+  } catch (e) { console.warn('backup', e); }
+}
+
+// รูปไอคอนบริการ: ย้ายจาก Firebase ไปเก็บใน Drive แล้วจำไว้ในเครื่อง
+async function migrateIcons() {
+  for (const sv of Object.values(db.services)) {
+    if (!sv.img || sv.imgDrive) continue;
+    try {
+      const f = await driveUpload(['หาร', 'รูปไอคอน'], `${sv.name}-${sv.id.slice(0, 6)}.jpg`, dataUrlToBlob(sv.img), { replace: true });
+      try { localStorage.setItem(imgCacheKey(f.id), sv.img); } catch (e) {}
+      put('services', { ...db.services[sv.id], img: null, imgDrive: f.id });
+    } catch (e) { console.warn('icon', e); break; }
+  }
+}
+async function afterCloudReady() {
+  await loadDriveCfg(); if (!driveCfg?.url) return;
+  await migrateIcons();
+  dailyBackup('หาร', () => ({ people: db.people, services: db.services, payments: db.payments, settings: db.settings }));
+}
+
 /* ====================== Firebase ====================== */
 let fbApi = null;
 async function loadFirebase() {
@@ -504,6 +571,7 @@ function startCloud(user) {
   const seen = new Set();
   const done = () => {
     if (seen.size < 4) return;
+    if (!startCloud.ready) { startCloud.ready = true; setTimeout(afterCloudReady, 3000); }
     if (localData && Object.keys(localData.services || {}).length && !localStorage.getItem('split-migrated-' + user.uid)) {
       localStorage.setItem('split-migrated-' + user.uid, '1');
       if (confirm(`พบข้อมูลในเครื่องนี้ (${Object.keys(localData.services).length} บริการ) อัปโหลดขึ้นคลาวด์ไหม?`))
@@ -538,7 +606,7 @@ document.fonts.ready.then(render);
 loadFirebase().catch(e => { console.warn(e); syncState = 'error'; showSync(); });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js');
 document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
-window.__split = { db, render };
+window.__split = { db, render, driveCall };
 </script>
 </body>
 </html>
